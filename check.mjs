@@ -9,7 +9,15 @@ function walk(dir) {
   );
 }
 
+if (!existsSync(root)) {
+  console.error(`${root}: directory not found`);
+  process.exit(1);
+}
 const pages = walk(root).filter((f) => f.endsWith(".html"));
+if (!pages.length) {
+  console.error(`${root}: no .html files found`);
+  process.exit(1);
+}
 const problems = [];
 
 for (const page of pages) {
@@ -21,7 +29,7 @@ for (const page of pages) {
     problems.push(`${page}: missing <link rel="stylesheet" href="style.css">`);
   }
   for (const m of html.matchAll(/href="([^"]*)"/g)) {
-    if (/^(https?:|mailto:|#)/.test(m[1])) continue;
+    if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(m[1])) continue;
     const target = m[1].split("#")[0].split("?")[0];
     if (!target) continue;
     if (!existsSync(resolve(dirname(page), target))) {

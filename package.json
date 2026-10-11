@@ -1,6 +1,4 @@
 {
-  "name": "factory-floor",
-  "private": true,
   "scripts": {
     "test": "node check.mjs"
   }
