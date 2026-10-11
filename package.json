@@ -1,5 +1,5 @@
 {
   "scripts": {
-    "test": "node check.mjs"
+    "test": "node check.mjs && node --test"
   }
 }
