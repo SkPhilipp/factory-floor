@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The loop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>The loop</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="loop.html">The loop</a></li>
+</ul>
+</nav>
+<p>Five phases. Backlog is a queue, Release is an automation, the three in between are staffed by agents. Build ends with a quality gate: a tool the agent must run before it may hand off. Release is the system merging what Review passed; no human approves a merge.</p>
+<pre>
+          ┌──── failure: back of the queue, with reasons and thread links ───┐
+          ▼                                                                   │
+ notes ─▶ Backlog ─▶ Intake ─▶ Build ──gate──▶ Review ─▶ Release ─▶ done      │
+ issues   (FIFO)     4 agents  2 agents        2 agents  automation           │
+                     8 min     5 min           5 min     no timeout ──────────┘
+</pre>
+<table>
+<tr><th>Phase</th><th>Staffed by</th><th>Capacity</th><th>Timeout</th><th>Artifact</th></tr>
+<tr><td>Backlog</td><td>nobody</td><td>unbounded</td><td>none</td><td>an issue labelled <code>factory</code>, waiting</td></tr>
+<tr><td>Intake</td><td>Intake Agent</td><td>4 at a time</td><td>8 minutes</td><td><code>factory/plans/N-A.md</code> on the task's branch: goal, scope, constraints, criteria, proofs</td></tr>
+<tr><td>Build</td><td>Build Agent, then the quality gate</td><td>2 at a time</td><td>5 minutes</td><td>commits, a draft pull request, a passing <code>factory/gates/N-A.md</code> written by the tool</td></tr>
+<tr><td>Review</td><td>Review Agent</td><td>2 at a time</td><td>5 minutes</td><td><code>factory/reviews/N-A.md</code> on the branch: criteria mapped to the diff, a verdict</td></tr>
+<tr><td>Release</td><td>the factory itself</td><td>1 at a time</td><td>none</td><td>merge commit, deploy log, issue closed</td></tr>
+</table>
+<p>The numbers are the starting configuration, not a law; each is a setting per repository.</p>
+<p>Every artifact is a file in the repository under <code>factory/</code>, committed on the task's branch. In the paths N is the issue number and A the attempt, so the second attempt at #42 writes <code>factory/plans/42-2.md</code> and <code>42-1.md</code> stays next to it. Files under <code>factory/</code> do not count for a plan's constraints, or the gate would fail on its own report. One task, one worktree, one thread per phase: the Intake thread gets a fresh worktree on branch <code>factory/42</code>, and the Build and Review threads, and every retry's threads, are spawned into that same worktree.</p>
+</main>
+</body>
+</html>
