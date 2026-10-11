@@ -36,6 +36,7 @@ th, td {
 pre {
   overflow-x: auto;
   font-family: ui-monospace, Menlo, Consolas, monospace;
+}
 
 .floor {
   perspective: 900px;
