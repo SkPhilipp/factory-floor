@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Release</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Release</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="release.html">Release</a></li>
+</ul>
+</nav>
+<p>Release is the factory's own automation, and it is the system merging: nobody approves a merge by hand. It takes a pull request that Review marked ready, merges it, runs the deploy, and closes the issue. No prompt, no model, no timeout. Its artifact is the merge commit and the deploy log.</p>
+<p>If a step before the merge fails, the factory attaches a technical reason and the task goes to the back of the Backlog with one strike. A failure after the merge is a system-wide problem, not a task's, and is out of scope.</p>
+<p>Not every phase has an agent, and more phases can become automated as the checks get good enough that no judgement is left in them. Release has one seat and a green light on the factory floor, because it is an automation.</p>
+<blockquote>You run in a factory where nobody watches in real time. You have a time limit for this phase; when it passes you are stopped and the task goes back to the backlog, so commit and push early. Your output is the artifact named in your instructions, in the shape given; a summary in chat is not an output. Use only the tools in your workspace. Never touch <code>main</code>. Never force-push. Never delete a branch you did not create. If you are unsure, stop and say so in a comment on the issue; a stopped agent is cheap, a confident wrong one is not.</blockquote>
+</main>
+</body>
+</html>

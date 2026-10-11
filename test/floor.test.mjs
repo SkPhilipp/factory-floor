@@ -1,0 +1,109 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { barState, tally, orbit, cardHref, buildModel, slotOf, slotsOf, layout } from "../site/floor.js";
+
+const phase = { timeout_s: 100 };
+const t0 = Date.parse("2026-01-01T00:00:00Z");
+const item = (o = {}) => ({ number: 1, title: "t", phase: "build", status: "waiting", strikes: 0, thread_url: null, issue_url: "i", started_at: null, defect: null, ...o });
+
+test("barState", () => {
+  const it = item({ started_at: "2026-01-01T00:00:00Z" });
+  assert.deepEqual(barState(it, phase, t0 + 50000), { pct: 50, hot: false });
+  assert.equal(barState(it, phase, t0 + 80000).hot, true);
+  assert.equal(barState(it, phase, t0 + 500000).pct, 100);
+  assert.deepEqual(barState(item(), phase, t0), { pct: 0, hot: false });
+});
+
+test("tally", () => {
+  const list = [item({ status: "merged" }), item({ status: "failed", strikes: 5 }), item({ strikes: 1 }), item()];
+  assert.deepEqual(tally(list), { merged: 1, failed: 1, retried: 1 });
+  assert.deepEqual(tally([...list, item({ status: "merged" })]), { merged: 2, failed: 1, retried: 1 });
+});
+
+test("orbit clamps", () => {
+  const hi = orbit({ rotateX: 50, rotateY: 0 }, 100000, -100000);
+  assert.deepEqual(hi, { rotateX: 80, rotateY: 45 });
+  const lo = orbit({ rotateX: 50, rotateY: 0 }, -100000, 100000);
+  assert.deepEqual(lo, { rotateX: 20, rotateY: -45 });
+});
+
+test("cardHref", () => {
+  assert.equal(cardHref(item({ thread_url: "th" })), "th");
+  assert.equal(cardHref(item()), "i");
+});
+
+test("defect survives re-render", () => {
+  const state = { phases: [{ id: "build", title: "Build", seats: 1, timeout_s: 100, agent: true }], items: [item({ defect: "bad" })] };
+  for (let n = 0; n < 2; n++) assert.equal(buildModel(state, t0)[0].queue[0].model.defect, "bad");
+});
+
+test("barState guards", () => {
+  const it = item({ started_at: "2026-01-01T00:00:00Z" });
+  assert.deepEqual(barState(it, { timeout_s: 0 }, t0), { pct: 0, hot: false });
+  assert.deepEqual(barState(item({ started_at: "nope" }), phase, t0), { pct: 0, hot: false });
+});
+
+test("running overflow goes to queue", () => {
+  const run = (n, o = {}) => item({ number: n, status: "running", ...o });
+  const state = {
+    phases: [
+      { id: "build", title: "B", seats: 2, timeout_s: 10, agent: true },
+      { id: "review", title: "R", seats: 0, timeout_s: 10, agent: true },
+    ],
+    items: [run(1), run(2), run(3), run(4, { phase: "review" })],
+  };
+  const m = buildModel(state, t0);
+  assert.equal(m[0].queue.length, 1);
+  assert.equal(m[1].queue.length, 1);
+  const n = m.reduce((a, c) => a + c.queue.length + c.seats.filter((s) => s.card).length, 0);
+  assert.equal(n, 4);
+});
+
+const run = (n, o = {}) => item({ number: n, status: "running", ...o });
+const mkState = (seats, items) => ({ phases: [{ id: "build", title: "B", seats, timeout_s: 10, agent: true }], items });
+const count = (m) => m[0].queue.length + m[0].seats.filter((s) => s.card).length;
+
+test("slotOf is stable, moves with seats, and queues", () => {
+  const st = mkState(2, [run(1), run(2), item({ number: 3 })]);
+  assert.deepEqual(slotsOf(buildModel(st, t0)), slotsOf(buildModel(st, t0)));
+  const before = slotsOf(buildModel(st, t0));
+  const after = slotsOf(buildModel(mkState(2, [run(2), item({ number: 3 })]), t0));
+  assert.equal(before.get(2), slotOf("build", 1));
+  assert.notEqual(before.get(2), after.get(2));
+  assert.ok(before.get(3).includes("queue"));
+});
+
+test("growing seats loses no running item", () => {
+  const items = [run(1), run(2), run(3)];
+  assert.equal(count(buildModel(mkState(1, items), t0)), 3);
+  const m = buildModel(mkState(3, items), t0);
+  assert.equal(count(m), 3);
+  assert.equal(m[0].queue.length, 0);
+});
+
+const ph = (id, seats) => ({ id, title: id, seats, timeout_s: 10, agent: true });
+const lay = (phases, items) => layout(buildModel({ phases, items }, t0));
+const q = (n, p = "a") => item({ number: n, phase: p });
+
+test("layout drops and reorders phases and shrinks seats", () => {
+  const items = [run(1, { phase: "a" }), run(2, { phase: "b" })];
+  assert.deepEqual(lay([ph("a", 1), ph("b", 1)], items).map((c) => c.id), ["a", "b"]);
+  assert.deepEqual(lay([ph("b", 1)], [items[1]]).map((c) => c.id), ["b"]);
+  assert.deepEqual(lay([ph("b", 1), ph("a", 1)], items).map((c) => c.id), ["b", "a"]);
+  assert.equal(lay([ph("a", 3)], []) [0].seats.length, 3);
+  assert.equal(lay([ph("a", 1)], []) [0].seats.length, 1);
+});
+
+test("layout queue follows model order", () => {
+  const ph1 = [ph("a", 0)];
+  assert.deepEqual(lay(ph1, [q(1), q(2), q(3)])[0].queue, [1, 2, 3]);
+  assert.deepEqual(lay(ph1, [q(2), q(3)])[0].queue, [2, 3]);
+  assert.deepEqual(lay(ph1, [q(3), q(2)])[0].queue, [3, 2]);
+});
+
+test("layout lists every item exactly once", () => {
+  const items = [run(1, { phase: "a" }), run(2, { phase: "a" }), q(3), run(4, { phase: "b" })];
+  const l = lay([ph("a", 1), ph("b", 0)], items);
+  const all = l.flatMap((c) => [...c.seats.map((s) => s.card).filter((x) => x !== null), ...c.queue]).sort();
+  assert.deepEqual(all, [1, 2, 3, 4]);
+});

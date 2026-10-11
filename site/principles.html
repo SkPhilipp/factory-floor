@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Principles</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Principles</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="principles.html">Principles</a></li>
+</ul>
+</nav>
+<ul>
+<li><strong>Issues as queue, labels as state.</strong> One source of truth that both the factory and a human can edit with the same tool.</li>
+<li><strong>Scripts where the step is deterministic, agents where it is not.</strong> Moving a note into an issue, or picking the oldest planned issue, needs no model. Writing acceptance criteria, writing code, and judging a diff do.</li>
+<li><strong>Three agents, not one.</strong> The agent that writes code must not be the one that decides the code is good. Separate prompts, separate sessions, separate context.</li>
+<li><strong>Bounded seats, bounded time.</strong> Capacity per phase and a timeout per phase are what make the factory's cost and latency predictable, and what make a stuck agent a visible event instead of a silent one.</li>
+<li><strong>Hard guards, not agreements.</strong> Every Build runs in its own worktree: its own branch and directory, created on spawn and cleaned up on archive. Parallel tasks cannot collide, and nothing an agent does there reaches <code>main</code>, because merging is the factory's and not the agent's. The working agreement tells agents the rules; the worktree is what enforces them.</li>
+<li><strong>Full permissions inside the blast radius.</strong> An unattended loop that waits on a permission prompt is a stalled loop. The worktree and the branch are the blast radius.</li>
+<li><strong>Every agent leaves an artifact.</strong> A plan, a gated pull request, a review, each with a fixed shape the factory can refuse. A summary in chat is not an output.</li>
+<li><strong>The gate is a tool, not a judgement.</strong> The agent runs it, the tool writes the report. A passing report means the checks passed, not that the agent said so.</li>
+<li><strong>Retries re-run everything, and carry the past.</strong> A failed task goes through every phase again, prompted with the reasons and with links to the failed threads. Those threads stay open for a human to comment in, and the branch stays for Build to continue from.</li>
+</ul>
+<h2>Why three</h2>
+<p>One agent doing all three phases has read its own plan, trusts its own checks and reviews its own diff. Each hand-off forces the output into an artifact a stranger can act on and the factory can refuse. The artifacts are the product, and they ship with the code. Each agent can be replaced by a better prompt, and each phase given more seats or a different timeout, without touching the others.</p>
+</main>
+</body>
+</html>

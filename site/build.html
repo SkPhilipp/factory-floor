@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Build - The Dark Factory</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Build</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="build.html">Build</a></li>
+<li><a href="backlog.html">Backlog</a></li>
+<li><a href="release.html">Release</a></li>
+<li><a href="loop.html">The loop</a></li>
+<li><a href="intake.html">Intake</a></li>
+</ul>
+</nav>
+<p>Build has 2 seats and a 5 minute timeout. Its artifact is commits on the branch, a draft pull request that references the issue, and a passing <code>factory/gates/N-A.md</code>, written by the quality gate and never by the agent.</p>
+<p>Input: the task's worktree with <code>factory/plans/N-A.md</code> on its branch, full permissions inside it, and the quality gate as a tool: <code>bb factory gate</code>, also exposed over MCP. On a retry the branch holds the previous attempt's commits and the issue carries the failure reasons and the ids of the earlier threads.</p>
+<h2>The quality gate, in order</h2>
+<ol>
+<li>The check command: the repository's one command for linting, formatting and tests, run from a clean install so a missing dependency fails here and not in CI.</li>
+<li>The plan's proofs: every command under Proofs, output captured, exit code recorded.</li>
+<li>The plan's constraints: the diff against <code>main</code>, checked for files outside the allowed set and for the budget. Files under <code>factory/</code> are exempt.</li>
+<li>The pull request: it exists, it is a draft, it references the issue.</li>
+<li>The report, written by the tool to <code>factory/gates/N-A.md</code> with a link on the pull request: the commit it ran against, each step with pass or fail, the captured output.</li>
+</ol>
+<p>The agent sees the same report and can fix and re-run as often as the timeout allows. On hand-off the factory re-runs the gate once more against the pushed commit. A report that is missing, failing, or for an older commit is a technical failure worth one strike, and the report itself is the reason. The gate keeps its clean install cached per worktree, so later runs cost seconds.</p>
+<h2>On failure</h2>
+<p>Three kinds with different costs: handing off without a passing gate, one strike; the phase times out or the pull request is missing, two strikes; the agent cannot do the plan, two strikes with a functional reason. Either way the branch and the thread stay, and the next attempt continues from them.</p>
+<h2>The prompt</h2>
+<blockquote>
+<p>You build one issue in an unattended factory. The plan is in <code>factory/plans/N-A.md</code> on this branch, with constraints, acceptance criteria and proofs. Do the plan and nothing else. You have five minutes; commit and push early. Work only in this workspace and on this branch; if the branch already has commits, they are a previous attempt, read the failure reason on the issue and continue from them. Stay inside the plan's constraints; if the plan cannot be done inside them, that is a functional failure, not a reason to widen them. Commit with a message that names the issue, push the branch, open a draft pull request with <code>Closes #N</code> in the body. Run <code>bb factory gate</code> before you stop; if it fails, fix the cause, push, and run it again. Stop when the pull request exists and the gate's last report is a pass against your last commit. Do not merge. Do not mark the pull request ready; Review does that. If the plan cannot be done, do not improvise: push what you have, comment on the issue under the heading "Functional failure" with one paragraph saying why, and stop.</p>
+</blockquote>
+</main>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Review</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="review.html">Review</a></li>
+<li><a href="build.html">Build</a></li>
+<li><a href="backlog.html">Backlog</a></li>
+<li><a href="release.html">Release</a></li>
+<li><a href="loop.html">The loop</a></li>
+<li><a href="intake.html">Intake</a></li>
+</ul>
+</nav>
+<p>Review has 2 seats and a 5 minute timeout. Its artifact is <code>factory/reviews/N-A.md</code> on the task's branch, with a link on the pull request.</p>
+<h2>Input</h2>
+<p>The task's worktree with a passing <code>factory/gates/N-A.md</code>, the plan in <code>factory/plans/N-A.md</code>, the pull request and the diff. The reviewer is told not to open the builder's thread. Before the agent starts, the factory checks that the branch merges cleanly into <code>main</code>; a conflict is a Review failure without a model call.</p>
+<h2>The review shape</h2>
+<pre>
+# Review of #N, attempt A
+
+## Criteria
+- [x] criterion, as written in the plan — `path/file.ext:12-30`
+- [ ] criterion — not satisfied: one sentence
+
+## Constraints
+- held / violated: which, where
+
+## Unrequested changes
+- `path/file.ext:40-52` — what it does and why it is not in the plan
+
+## Defects
+1. `path/file.ext:line` — the problem in one sentence; what resolves it
+
+## Verdict
+READY | FINDINGS
+</pre>
+<h2>Verifiable because</h2>
+<p>The end of Review is a command. The review file exists, every criterion from the plan appears in its Criteria section with a diff reference or a reason, and the last line is one of two words. <code>READY</code> with any unchecked criterion, violated constraint or defect is refused as malformed.</p>
+<h2>On failure</h2>
+<p><code>FINDINGS</code> is a functional failure reason and costs one strike. The task goes to the back of the Backlog and is re-processed from Intake, with the review file and a link to this thread as part of what every following agent reads.</p>
+<h2>The agent that writes is not the agent that judges</h2>
+<p>The builder sees its own plan and its own output and will grade them kindly. That is why the gate is a tool the builder runs but does not write, and why the reviewer sees only the plan, the gate report and the diff, cannot ask the builder anything, and treats a missing proof as a finding, not an oversight.</p>
+<h2>The prompt</h2>
+<blockquote>
+<p>You review a pull request produced by an unattended factory. You did not write it, you cannot ask the author anything, and you do not open the builder's thread. Read <code>factory/plans/N-A.md</code>, <code>factory/gates/N-A.md</code> and the diff. Write <code>factory/reviews/N-A.md</code> with exactly the sections Criteria, Constraints, Unrequested changes, Defects and Verdict, commit it to this branch, and comment on the pull request with a link to it. For each acceptance criterion, find the lines in the diff that satisfy it, or state that none do. Check the diff against the plan's constraints. List every change the plan did not ask for; unrequested changes are findings even if they are improvements. List defects: wrong behaviour, missing error handling, anything a careful colleague would not merge. The verdict is <code>READY</code> only if every criterion is satisfied, every constraint held, and the other two sections are empty. If it is <code>READY</code>, mark the pull request ready for review. Do not fix anything. Do not comment on style the quality gate already enforces.</p>
+</blockquote>
+</main>
+</body>
+</html>

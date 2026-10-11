@@ -1,0 +1,16 @@
+{
+  "phases": [
+    { "id": "backlog", "title": "Backlog", "seats": 0, "timeout_s": 0, "agent": false },
+    { "id": "intake", "title": "Intake", "seats": 1, "timeout_s": 600, "agent": true },
+    { "id": "build", "title": "Build", "seats": 2, "timeout_s": 1800, "agent": true },
+    { "id": "review", "title": "Review", "seats": 1, "timeout_s": 900, "agent": true },
+    { "id": "release", "title": "Release", "seats": 1, "timeout_s": 0, "agent": false }
+  ],
+  "items": [
+    { "number": 21, "title": "Sample waiting task", "phase": "backlog", "status": "waiting", "strikes": 0, "thread_url": null, "issue_url": "https://github.com/SkPhilipp/factory-floor/issues/21", "started_at": null, "defect": null },
+    { "number": 11, "title": "Held by an agent", "phase": "intake", "status": "running", "strikes": 0, "thread_url": "http://localhost/threads/thr_sample", "issue_url": "https://github.com/SkPhilipp/factory-floor/issues/11", "started_at": "2026-01-01T00:00:00Z", "defect": null },
+    { "number": 12, "title": "Two strikes survived", "phase": "build", "status": "waiting", "strikes": 2, "thread_url": null, "issue_url": "https://github.com/SkPhilipp/factory-floor/issues/12", "started_at": null, "defect": "Gate failed: missing test" },
+    { "number": 14, "title": "Stuck, factory:failed", "phase": "review", "status": "failed", "strikes": 5, "thread_url": null, "issue_url": "https://github.com/SkPhilipp/factory-floor/issues/14", "started_at": null, "defect": null },
+    { "number": 10, "title": "Merged and slid out", "phase": "release", "status": "merged", "strikes": 0, "thread_url": null, "issue_url": "https://github.com/SkPhilipp/factory-floor/issues/10", "started_at": null, "defect": null }
+  ]
+}
