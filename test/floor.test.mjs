@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { barState, tally, orbit, cardHref, buildModel } from "../site/floor.js";
+import { barState, tally, orbit, cardHref, buildModel, slotOf, slotsOf } from "../site/floor.js";
 
 const phase = { timeout_s: 100 };
 const t0 = Date.parse("2026-01-01T00:00:00Z");
@@ -57,4 +57,26 @@ test("running overflow goes to queue", () => {
   assert.equal(m[1].queue.length, 1);
   const n = m.reduce((a, c) => a + c.queue.length + c.seats.filter((s) => s.card).length, 0);
   assert.equal(n, 4);
+});
+
+const run = (n, o = {}) => item({ number: n, status: "running", ...o });
+const mkState = (seats, items) => ({ phases: [{ id: "build", title: "B", seats, timeout_s: 10, agent: true }], items });
+const count = (m) => m[0].queue.length + m[0].seats.filter((s) => s.card).length;
+
+test("slotOf is stable, moves with seats, and queues", () => {
+  const st = mkState(2, [run(1), run(2), item({ number: 3 })]);
+  assert.deepEqual(slotsOf(buildModel(st, t0)), slotsOf(buildModel(st, t0)));
+  const before = slotsOf(buildModel(st, t0));
+  const after = slotsOf(buildModel(mkState(2, [run(2), item({ number: 3 })]), t0));
+  assert.equal(before.get(2), slotOf("build", 1));
+  assert.notEqual(before.get(2), after.get(2));
+  assert.ok(before.get(3).includes("queue"));
+});
+
+test("growing seats loses no running item", () => {
+  const items = [run(1), run(2), run(3)];
+  assert.equal(count(buildModel(mkState(1, items), t0)), 3);
+  const m = buildModel(mkState(3, items), t0);
+  assert.equal(count(m), 3);
+  assert.equal(m[0].queue.length, 0);
 });

@@ -58,11 +58,25 @@ export function buildModel(state, nowMs) {
   });
 }
 
+// Slot id: phase plus a seat index, or the queue when seatIndex is null.
+export function slotOf(phaseId, seatIndex) {
+  return seatIndex === null ? phaseId + "/queue" : phaseId + "/seat/" + seatIndex;
+}
+
+// Slot id of every item in a model, keyed by item number.
+export function slotsOf(model) {
+  const out = new Map();
+  for (const col of model) {
+    col.seats.forEach((s, n) => s.card && out.set(s.card.item.number, slotOf(col.phase.id, n)));
+    col.queue.forEach((e) => out.set(e.item.number, slotOf(col.phase.id, null)));
+  }
+  return out;
+}
+
 function main() {
   const scene = document.querySelector(".scene");
   const tallyEl = document.querySelector(".tally");
   const cards = new Map();
-  const keys = new Map();
   let angles = { rotateX: 50, rotateY: 0 };
 
   const errEl = document.createElement("p");
@@ -105,58 +119,69 @@ function main() {
     return el;
   };
 
-  const columns = [];
-  const build = (model) => {
-    for (const col of model) {
+  const columns = new Map();
+  const slots = new Map();
+  const ensureColumn = (phase) => {
+    let col = columns.get(phase.id);
+    if (!col) {
       const sec = document.createElement("section");
       sec.className = "column";
-      sec.id = "col-" + col.phase.id;
+      sec.id = "col-" + phase.id;
       const h = document.createElement("h3");
-      h.textContent = col.phase.title;
       sec.appendChild(h);
-      const seats = col.seats.map(() => {
-        const seat = document.createElement("div");
-        seat.innerHTML = '<span class="light"></span><div class="pad"></div>';
-        sec.appendChild(seat);
-        return seat;
-      });
       const queue = document.createElement("div");
       queue.className = "queue";
       sec.appendChild(queue);
       scene.appendChild(sec);
-      columns.push({ seats, queue });
+      columns.set(phase.id, (col = { h, queue, seats: [] }));
+    }
+    col.h.textContent = phase.title;
+    return col;
+  };
+  const ensureSeats = (col, count) => {
+    while (col.seats.length < count) {
+      const seat = document.createElement("div");
+      seat.innerHTML = '<span class="light"></span><div class="pad"></div>';
+      col.queue.before(seat);
+      col.seats.push(seat);
     }
   };
 
   const render = (state) => {
     const model = buildModel(state, Date.now());
-    if (!columns.length) build(model);
     const live = new Set();
-    model.forEach((col, c) => {
-      const { seats, queue } = columns[c];
-      const place = (entry, parent) => {
+    model.forEach((colModel) => {
+      const col = ensureColumn(colModel.phase);
+      ensureSeats(col, colModel.seats.length);
+      const { seats, queue } = col;
+      const place = (entry, parent, slot) => {
         const { item, model: m } = entry;
         live.add(item.number);
         let el = cards.get(item.number);
         if (!el) cards.set(item.number, (el = makeCard(item)));
         paint(el, m, item);
-        const key = item.phase + "/" + item.status;
-        if (keys.get(item.number) !== key || el.parentNode !== parent) parent.appendChild(el);
-        keys.set(item.number, key);
+        if (slots.get(item.number) !== slot) parent.appendChild(el);
+        slots.set(item.number, slot);
       };
-      col.seats.forEach((s, n) => {
-        if (!seats[n]) return;
-        seats[n].className = "seat" + (s.card || s.on ? "" : " spare");
-        seats[n].firstChild.className = "light" + (s.green ? " green" : "") + (s.on ? " on" : "");
-        if (s.card) place(s.card, seats[n]);
+      seats.forEach((seat, n) => {
+        const s = colModel.seats[n];
+        if (!s) {
+          seat.className = "seat spare";
+          seat.hidden = true;
+          return;
+        }
+        seat.hidden = false;
+        seat.className = "seat" + (s.card || s.on ? "" : " spare");
+        seat.firstChild.className = "light" + (s.green ? " green" : "") + (s.on ? " on" : "");
+        if (s.card) place(s.card, seat, slotOf(colModel.phase.id, n));
       });
-      col.queue.forEach((e) => place(e, queue));
+      colModel.queue.forEach((e) => place(e, queue, slotOf(colModel.phase.id, null)));
     });
     for (const [number, el] of cards) {
       if (live.has(number)) continue;
       el.remove();
       cards.delete(number);
-      keys.delete(number);
+      slots.delete(number);
     }
     const t = tally(state.items);
     tallyEl.innerHTML = `Throughput: <span>${t.merged} merged</span>, <span>${t.retried} retried</span>, <span>${t.failed} failed</span>`;
