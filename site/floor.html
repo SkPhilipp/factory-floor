@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The floor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>The floor</h1>
+<p>The factory runs with the lights off. The floor is what you see when you look through the window. It is a page in bb, rendered in CSS 3D, fed by the same state that drives the loop. It is not a dashboard with a 3D background: every moving thing on screen is a real issue, thread or check.</p>
+<table>
+<thead><tr><th>Fact</th><th>Source</th><th>Readable as</th></tr></thead>
+<tbody>
+<tr><td>each work item and its identity</td><td>issue number, title</td><td>a distinct card you can click</td></tr>
+<tr><td>which phase it is in</td><td>the <code>factory:*</code> label</td><td>the column the card sits in</td></tr>
+<tr><td>who is working on it right now</td><td>thread running</td><td>the card lifts off its pad and the pad's light is on</td></tr>
+<tr><td>how many attempts it has survived</td><td>strikes</td><td>dots on the card</td></tr>
+<tr><td>how much of the phase timeout is used</td><td>thread start time against the timeout</td><td>a bar under the title that fills and turns orange near the limit</td></tr>
+<tr><td>spare seats in a phase</td><td>seats minus busy threads</td><td>an empty pad with its light off</td></tr>
+<tr><td>which phases have no agent</td><td>configuration</td><td>one pad with a green light</td></tr>
+<tr><td>what is stuck</td><td><code>factory:failed</code></td><td>the card goes dark and fades out</td></tr>
+<tr><td>throughput</td><td>counts</td><td>a tally of merged, retried and failed</td></tr>
+</tbody>
+</table>
+<div class="floor">
+<div class="scene">
+<section class="column"><h3>Backlog</h3><div class="queue"><a class="card waiting" href="#"><b>#21</b> Sample waiting task<span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar"><u style="width:0%"></u></span></a><a class="card waiting" href="#"><b>#22</b> Another waiting task<span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar"><u style="width:0%"></u></span></a></div></section>
+<section class="column"><h3>Intake</h3><div class="seat"><span class="light on"></span><div class="pad"></div><a class="card held" href="#"><b>#11</b> Held by an agent<span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar"><u style="width:30%"></u></span></a></div><div class="queue"></div></section>
+<section class="column"><h3>Build</h3><div class="seat"><span class="light on"></span><div class="pad"></div><a class="card held strikes" href="#"><b>#12</b> Two strikes survived<span class="dots"><i class="dot filled"></i><i class="dot filled"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar"><u style="width:55%"></u></span></a></div><div class="seat"><span class="light on"></span><div class="pad"></div><a class="card held" href="#"><b>#13</b> Near the timeout<span class="dots"><i class="dot filled"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar hot"><u style="width:92%"></u></span></a></div><div class="queue"></div></section>
+<section class="column"><h3>Review</h3><div class="seat"><span class="light "></span><div class="pad"></div></div><div class="queue"><a class="card failed" href="#"><b>#14</b> Stuck, factory:failed<span class="dots"><i class="dot filled"></i><i class="dot filled"></i><i class="dot filled"></i><i class="dot filled"></i><i class="dot filled"></i></span><span class="bar"><u style="width:100%"></u></span></a></div></section>
+<section class="column"><h3>Release</h3><div class="seat"><span class="light green on"></span><div class="pad"></div><a class="card merged" href="#"><b>#10</b> Merged and slid out<span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="bar"><u style="width:100%"></u></span></a></div><div class="queue"></div></section>
+</div>
+</div>
+<p class="tally">Throughput: <span>3 merged</span>, <span>1 retried</span>, <span>1 failed</span></p>
+<p>Ideas that did not ship first: a lights-out assembly line with a conveyor and scanner tunnel, a semiconductor fab with defect maps, a foundry with a quench, an orbital shipyard, a pneumatic tube sorting office. They stay on the list for the day the columns look tame.</p>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="release.html">Release</a></li>
+<li><a href="loop.html">The loop</a></li>
+<li><a href="floor.html">Floor</a></li>
+</ul>
+</nav>
+</main>
+</body>
+</html>

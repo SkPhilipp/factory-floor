@@ -32,3 +32,153 @@ th, td {
   border: 1px solid #2e2e31;
   padding: 0.4rem 0.8rem;
 }
+
+pre {
+  overflow-x: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+.floor {
+  perspective: 900px;
+  margin: 2rem 0 4rem;
+  overflow: visible;
+}
+
+.scene {
+  display: flex;
+  gap: 0.5rem;
+  transform-style: preserve-3d;
+  transform: rotateX(50deg);
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  transform-style: preserve-3d;
+  background: #1c1c1f;
+  border: 1px solid #2e2e31;
+  padding: 0.5rem;
+  min-height: 300px;
+}
+
+.column h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.seat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 96px;
+  margin-bottom: 0.5rem;
+  transform-style: preserve-3d;
+}
+
+.light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3a3a3e;
+  margin-right: 6px;
+}
+
+.light.on {
+  background: #e8c547;
+}
+
+.light.green {
+  background: #3fbf5f;
+}
+
+.pad {
+  flex: 1;
+  height: 100%;
+  background: #26262a;
+  border: 1px solid #3a3a3e;
+}
+
+.queue {
+  margin-top: 1rem;
+  opacity: 0.45;
+  transform-style: preserve-3d;
+}
+
+.card {
+  display: block;
+  position: relative;
+  background: #34343a;
+  color: #f2f3f5;
+  text-decoration: none;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  padding: 0.3rem;
+  margin-bottom: 0.3rem;
+  border: 1px solid #55555c;
+  transform: translateZ(0);
+  transition: transform 0.4s, opacity 0.4s, background 0.4s;
+}
+
+.seat .card {
+  position: absolute;
+  left: 20px;
+  right: 0;
+  top: 4px;
+}
+
+.card.held {
+  transform: translateZ(30px);
+}
+
+.card.failed {
+  background: #0a0a0b;
+  opacity: 0.3;
+}
+
+.card.merged {
+  transform: translateX(120%);
+  opacity: 0.6;
+}
+
+.dots {
+  display: block;
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 3px;
+  border-radius: 50%;
+  background: #4a4a50;
+}
+
+.dot.filled {
+  background: #d9534f;
+}
+
+.bar {
+  display: block;
+  height: 4px;
+  margin-top: 3px;
+  background: #222226;
+}
+
+.bar u {
+  display: block;
+  height: 100%;
+  background: #7fb58a;
+  transition: width 0.4s;
+}
+
+.bar.hot {
+  border-bottom: 2px solid #f0932b;
+}
+
+.bar.hot u {
+  background: #f0932b;
+}
+
+.tally span {
+  color: #f2f3f5;
+}

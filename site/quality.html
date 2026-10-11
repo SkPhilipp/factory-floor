@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quality control</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Quality control</h1>
+<p>A dark factory has no one watching, so quality cannot come from watching. It comes from three things: a quality gate the agent must pass before it may hand off, artifacts with a shape the factory can refuse, and a reviewer that trusts neither the builder nor its summary.</p>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="quality.html">Quality</a></li>
+</ul>
+</nav>
+<h2>Artifacts with a shape</h2>
+<table>
+<thead>
+<tr><th>Artifact</th><th>Path on the branch</th><th>Refused when</th></tr>
+</thead>
+<tbody>
+<tr><td>the plan from Intake</td><td><code>factory/plans/N-A.md</code></td><td>missing; a section is missing; no acceptance criterion; a proof is not a runnable command</td></tr>
+<tr><td>the gate report from Build</td><td><code>factory/gates/N-A.md</code></td><td>missing, failing, or not for the pushed commit</td></tr>
+<tr><td>the review from Review</td><td><code>factory/reviews/N-A.md</code></td><td>missing; a criterion from the plan is not mapped; the verdict is not one of two words; <code>READY</code> with an open item</td></tr>
+</tbody>
+</table>
+<p>A refused artifact is a technical failure. The agent is told exactly which rule it broke and tries again.</p>
+<h2>What counts as proof</h2>
+<p>An artifact a stranger can verify without trusting the author.</p>
+<table>
+<thead>
+<tr><th>Claim</th><th>Proof</th><th>Verified by</th></tr>
+</thead>
+<tbody>
+<tr><td>it lints and tests</td><td>the check command's output, exit code shown</td><td>the quality gate, run by the agent, re-run by the factory</td></tr>
+<tr><td>it does what the plan asked</td><td>each proof command from the plan with its output</td><td>the quality gate</td></tr>
+<tr><td>the phase did its job</td><td>the phase's artifact exists under <code>factory/</code> with its sections</td><td>a command the factory runs at the end of the phase</td></tr>
+<tr><td>it stayed inside the plan</td><td>the diff touches only allowed files, within budget</td><td>the quality gate, then the Review agent</td></tr>
+<tr><td>it renders</td><td>a screenshot written by a proof command at a stated viewport</td><td>the gate runs the command, the reviewer looks</td></tr>
+<tr><td>it is the whole issue</td><td>each acceptance criterion mapped to lines in the diff</td><td>the Review agent, shape-checked by the factory</td></tr>
+<tr><td>it is only the issue</td><td>no unrequested change listed in the review</td><td>the Review agent</td></tr>
+</tbody>
+</table>
+<p>Not a proof: "I ran the tests and they pass" without output. "Verified manually". A summary of what was done. Those are claims. Proofs are attached to the pull request, not the thread, because the pull request is what survives. The thread is the shop floor; the pull request is the shipping label.</p>
+<h2>Layers, and what each catches</h2>
+<table>
+<thead>
+<tr><th>Layer</th><th>Catches</th><th>Cost</th></tr>
+</thead>
+<tbody>
+<tr><td>Artifact shape</td><td>agents that skipped a section or a criterion</td><td>milliseconds, no model</td></tr>
+<tr><td>Quality gate: checks</td><td>style, dead code, obvious mistakes, broken tests</td><td>seconds, no model</td></tr>
+<tr><td>Quality gate: proofs and constraints</td><td>agents that claim without doing; scope creep by file</td><td>seconds, no model</td></tr>
+<tr><td>Merge check</td><td>branches that no longer merge cleanly</td><td>seconds, no model</td></tr>
+<tr><td>Review agent</td><td>missing criteria, unrequested changes, defects the tests do not cover</td><td>one model call</td></tr>
+<tr><td>Release</td><td>the merge and the deploy, by the system</td><td>minutes, no model</td></tr>
+</tbody>
+</table>
+<p>The order is the order of cost. Nothing reaches the next layer until the cheaper one passed. No human approves a merge; the human reads what shipped, after the fact, and what they would have changed becomes the next task on the Backlog. Human review capacity stops being rationed and starts being built, by adding checks the layers can run.</p>
+<h2>Failure modes</h2>
+<dl>
+<dt>the confident wrong agent</dt><dd>caught by the gate re-running the proofs and by the reviewer</dd>
+<dt>the scope creeper</dt><dd>caught by the plan's constraints at the gate and the unrequested-changes section in the review</dd>
+<dt>the flaky check</dt><dd>caught by CI disagreeing with the gate</dd>
+<dt>the stalled loop</dt><dd>an agent waiting on a prompt nobody answers, caught by full permissions inside the workspace and by the phase timeout</dd>
+<dt>the runaway loop</dt><dd>a task failing and re-entering forever, caught by the five-strike cap</dd>
+<dt>the conflicting pair</dt><dd>two builds touching the same files, caught by the merge check at the start of Review</dd>
+<dt>the unplannable request</dt><dd>caught by the Intake weight, one failure there is final</dd>
+</dl>
+</main>
+</body>
+</html>

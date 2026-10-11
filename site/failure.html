@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Strikes, timeouts and failure</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Strikes, timeouts and failure</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="failure.html">Failure</a></li>
+</ul>
+</nav>
+<h2>Capacity</h2>
+<p>Each phase has a fixed number of agent seats, set per repository. A task waits on the backlog, or at the entrance of a phase, until a seat is free. Spare seats are visible; a phase that is always full is the bottleneck, and adding a seat is a configuration change.</p>
+<h2>Timeouts</h2>
+<p>An agent may hold a task for a bounded time per phase. When the timeout passes, the factory stops the thread and the task fails that phase with a technical reason: timed out. The clock never pauses. A Build thread that sits four minutes in a rate-limit wait and then times out has timed out; a system failure is also a failure.</p>
+<p>Which kind it was is read off afterwards: a thread that stopped giving reasons is the harness's problem, a thread that kept working and ran over is the agent's.</p>
+<h2>Two kinds of failure reason</h2>
+<p>The one who attaches the reason is who noticed.</p>
+<ul>
+<li>Technical, attached by the factory: timed out, the quality gate failed, the pull request is missing, an artifact is malformed, merge conflict, deploy failed.</li>
+<li>Functional, attached by the agent: the request is contradictory, the plan cannot be done inside its constraints, the review's findings.</li>
+</ul>
+<p>A rising share of technical failures means the harness, the timeouts or the gate are wrong; a rising share of functional failures means the intake or the prompts are.</p>
+<h2>Retries</h2>
+<p>A retry is a full re-run, with the past attached. A failed task goes through every phase again, Intake first, so the plan is made again with the failure in view. Each new thread is prompted with the failure reasons and the ids of the failed attempts' threads, and threads can read each other.</p>
+<p>Those threads are not deleted: a human can open one and leave feedback in it, and the next attempt reads it. The branch and its commits stay too, so Build continues from the previous work.</p>
+<h2>Strikes</h2>
+<p>A task can absorb five.</p>
+<table>
+<tr><th>Failed at</th><th>Strikes</th><th>Meaning</th></tr>
+<tr><td>Intake</td><td>5</td><td>final at once; if the agent whose job is to understand the request cannot, retrying is noise</td></tr>
+<tr><td>Build, the quality gate</td><td>1</td><td>handed off without a passing gate; cheap, and the report says exactly what to fix</td></tr>
+<tr><td>Build, timeout or cannot be done</td><td>2</td><td>two are survivable, a third is not</td></tr>
+<tr><td>Review, including a merge conflict</td><td>1</td><td>findings are cheap to act on, so several rounds are allowed</td></tr>
+<tr><td>Release</td><td>1</td><td>a technical failure in the automation before the merge</td></tr>
+</table>
+<p>Strikes add up: two build failures and one round of findings is five, and the task is done. The weights say what the factory believes: a plan that cannot be made is not worth a second try, code that fails twice is probably the wrong approach, and a failed gate or a review finding is what the loop is for.</p>
+</main>
+</body>
+</html>
