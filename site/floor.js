@@ -73,6 +73,15 @@ export function slotsOf(model) {
   return out;
 }
 
+// Pure DOM plan: per column in model order, its seats (with card number or null) and queue numbers.
+export function layout(model) {
+  return model.map((col) => ({
+    id: col.phase.id,
+    seats: col.seats.map((s, index) => ({ index, card: s.card ? s.card.item.number : null })),
+    queue: col.queue.map((e) => e.item.number),
+  }));
+}
+
 function main() {
   const scene = document.querySelector(".scene");
   const tallyEl = document.querySelector(".tally");
@@ -133,7 +142,7 @@ function main() {
       queue.className = "queue";
       sec.appendChild(queue);
       scene.appendChild(sec);
-      columns.set(phase.id, (col = { h, queue, seats: [] }));
+      columns.set(phase.id, (col = { sec, h, queue, seats: [] }));
     }
     col.h.textContent = phase.title;
     return col;
@@ -150,8 +159,13 @@ function main() {
   const render = (state) => {
     const model = buildModel(state, Date.now());
     const live = new Set();
-    model.forEach((colModel) => {
+    const plan = layout(model);
+    const shown = new Set(plan.map((p) => p.id));
+    for (const [id, c] of columns) c.sec.hidden = !shown.has(id);
+    model.forEach((colModel, ci) => {
       const col = ensureColumn(colModel.phase);
+      col.sec.hidden = false;
+      if (scene.children[ci] !== col.sec) scene.insertBefore(col.sec, scene.children[ci] || null);
       ensureSeats(col, colModel.seats.length);
       const { seats, queue } = col;
       const place = (entry, parent, slot) => {
@@ -176,6 +190,9 @@ function main() {
         if (s.card) place(s.card, seat, slotOf(colModel.phase.id, n));
       });
       colModel.queue.forEach((e) => place(e, queue, slotOf(colModel.phase.id, null)));
+      const want = plan[ci].queue;
+      const have = Array.from(queue.children, (el) => Number(el.querySelector("b").textContent.slice(1)));
+      if (want.join() !== have.join()) want.forEach((n) => queue.appendChild(cards.get(n)));
     });
     for (const [number, el] of cards) {
       if (live.has(number)) continue;

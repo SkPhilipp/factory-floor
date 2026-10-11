@@ -201,3 +201,8 @@ pre {
 .load-error {
   color: #f0932b;
 }
+
+.column[hidden],
+.seat[hidden] {
+  display: none;
+}

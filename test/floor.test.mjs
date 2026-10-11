@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { barState, tally, orbit, cardHref, buildModel, slotOf, slotsOf } from "../site/floor.js";
+import { barState, tally, orbit, cardHref, buildModel, slotOf, slotsOf, layout } from "../site/floor.js";
 
 const phase = { timeout_s: 100 };
 const t0 = Date.parse("2026-01-01T00:00:00Z");
@@ -79,4 +79,31 @@ test("growing seats loses no running item", () => {
   const m = buildModel(mkState(3, items), t0);
   assert.equal(count(m), 3);
   assert.equal(m[0].queue.length, 0);
+});
+
+const ph = (id, seats) => ({ id, title: id, seats, timeout_s: 10, agent: true });
+const lay = (phases, items) => layout(buildModel({ phases, items }, t0));
+const q = (n, p = "a") => item({ number: n, phase: p });
+
+test("layout drops and reorders phases and shrinks seats", () => {
+  const items = [run(1, { phase: "a" }), run(2, { phase: "b" })];
+  assert.deepEqual(lay([ph("a", 1), ph("b", 1)], items).map((c) => c.id), ["a", "b"]);
+  assert.deepEqual(lay([ph("b", 1)], [items[1]]).map((c) => c.id), ["b"]);
+  assert.deepEqual(lay([ph("b", 1), ph("a", 1)], items).map((c) => c.id), ["b", "a"]);
+  assert.equal(lay([ph("a", 3)], []) [0].seats.length, 3);
+  assert.equal(lay([ph("a", 1)], []) [0].seats.length, 1);
+});
+
+test("layout queue follows model order", () => {
+  const ph1 = [ph("a", 0)];
+  assert.deepEqual(lay(ph1, [q(1), q(2), q(3)])[0].queue, [1, 2, 3]);
+  assert.deepEqual(lay(ph1, [q(2), q(3)])[0].queue, [2, 3]);
+  assert.deepEqual(lay(ph1, [q(3), q(2)])[0].queue, [3, 2]);
+});
+
+test("layout lists every item exactly once", () => {
+  const items = [run(1, { phase: "a" }), run(2, { phase: "a" }), q(3), run(4, { phase: "b" })];
+  const l = lay([ph("a", 1), ph("b", 0)], items);
+  const all = l.flatMap((c) => [...c.seats.map((s) => s.card).filter((x) => x !== null), ...c.queue]).sort();
+  assert.deepEqual(all, [1, 2, 3, 4]);
 });
