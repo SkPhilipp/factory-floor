@@ -74,77 +74,106 @@ export function buildState(inputs) {
   return { phases, items };
 }
 
-const run = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 << 20 });
+const defaultRun = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 << 20 });
 
-function gatherReports() {
+function call(run, what, cmd, args) {
+  try {
+    return run(cmd, args);
+  } catch (e) {
+    throw new Error(`${cmd} ${args.slice(0, 3).join(" ")} failed for ${what}: ${String(e.message).split("\n")[0]}`);
+  }
+}
+
+function callJson(run, what, cmd, args) {
+  const out = call(run, what, cmd, args);
+  try {
+    return JSON.parse(out);
+  } catch {
+    throw new Error(`${cmd} ${args.slice(0, 3).join(" ")} returned invalid JSON for ${what}`);
+  }
+}
+
+function section(text, heading) {
+  const lines = text.split("\n");
+  const i = lines.findIndex((l) => l.trim().toLowerCase() === `## ${heading}`.toLowerCase());
+  if (i < 0) return null;
+  const end = lines.findIndex((l, j) => j > i && /^#{1,2} /.test(l));
+  return lines.slice(i + 1, end < 0 ? undefined : end);
+}
+
+export function parseReport(kind, text) {
+  if (kind === "gate") {
+    if (/^Result: \*\*PASS\*\*/m.test(text)) return { ok: true, text: "" };
+    const m = /^## (.+?): fail\s*$/m.exec(text);
+    return { ok: false, text: m && /^Result: \*\*FAIL\*\*/m.test(text) ? `Gate failed: ${m[1]}` : "gate failed" };
+  }
+  const verdictLines = section(text, "Verdict");
+  const verdict = verdictLines && verdictLines.find((l) => l.trim());
+  if (verdict && verdict.trim() === "READY") return { ok: true, text: "" };
+  if (!verdict || verdict.trim() !== "FINDINGS") return { ok: false, text: "review unreadable" };
+  const item = (section(text, "Defects") || []).find((l) => l.trim());
+  const first = item ? item.trim().replace(/^(?:[-*]|\d+[.)])\s+/, "") : "";
+  return { ok: false, text: first || "review findings" };
+}
+
+function gatherReports(run) {
   const reports = [];
   const refs = ["origin/master"];
-  try {
-    for (const ref of run("git", ["for-each-ref", "--format=%(refname:short)", "refs/remotes/origin"]).split("\n")) {
-      if (/^origin\/(bb\/\d+-.*|factory\/\d+)$/.test(ref)) refs.push(ref);
-    }
-  } catch {}
+  for (const ref of call(run, "refs", "git", ["for-each-ref", "--format=%(refname:short)", "refs/remotes/origin"]).split("\n")) {
+    if (/^origin\/(bb\/\d+-.*|factory\/\d+)$/.test(ref)) refs.push(ref);
+  }
   for (const ref of refs) {
     for (const kind of ["gate", "review"]) {
-      let names = [];
-      try {
-        names = run("git", ["ls-tree", "--name-only", ref, `factory/${kind}s/`]).split("\n").filter(Boolean);
-      } catch {}
+      const names = call(run, ref, "git", ["ls-tree", "--name-only", ref, `factory/${kind}s/`]).split("\n").filter(Boolean);
       for (const name of names) {
         const m = /\/(\d+)-(\d+)\.md$/.exec(name);
         if (!m) continue;
-        let text;
-        try {
-          text = run("git", ["show", `${ref}:${name}`]);
-        } catch {
-          continue;
-        }
-        const ok = kind === "gate" ? /^Result: \*\*PASS\*\*/m.test(text) : /^READY\b|^Verdict:\s*\**READY/m.test(text) || !/FINDINGS/.test(text);
-        const first = text.split("\n").find((l) => /fail|finding|defect|\[ \]/i.test(l) && !l.startsWith("Result")) || "";
-        reports.push({ issue: Number(m[1]), attempt: Number(m[2]), kind, ok, text: first.replace(/^[-*#\s]+/, "").trim() || `${kind} failed` });
+        const { ok, text } = parseReport(kind, call(run, `${ref}:${name}`, "git", ["show", `${ref}:${name}`]));
+        reports.push({ issue: Number(m[1]), attempt: Number(m[2]), kind, ok, text: text || `${kind} failed` });
       }
     }
   }
   return reports;
 }
 
-function gatherInputs() {
-  const issues = JSON.parse(run("gh", ["issue", "list", "--state", "all", "--limit", "500", "--json", "number,title,state,url,labels"]));
+export async function gatherInputs(run = defaultRun) {
+  const issues = callJson(run, "issue list", "gh", ["issue", "list", "--state", "all", "--limit", "500", "--json", "number,title,state,url,labels"]);
   const threads = {};
   for (const issue of issues) {
-    issue.labels = issue.labels.map((l) => l.name);
-    let comments = [];
-    try {
-      comments = JSON.parse(run("gh", ["issue", "view", String(issue.number), "--json", "comments"])).comments;
-    } catch {}
-    issue.comments = comments.map((c) => ({ body: c.body, createdAt: c.createdAt }));
+    issue.labels = issue.labels.map((l) => l.name ?? l);
+    const view = callJson(run, `issue #${issue.number}`, "gh", ["issue", "view", String(issue.number), "--json", "comments"]);
+    issue.comments = (view.comments || []).map((c) => ({ body: c.body, createdAt: c.createdAt }));
     const id = newestStarted(issue.comments)?.thread;
     if (id && !(id in threads)) {
-      try {
-        const t = JSON.parse(run("bb", ["thread", "show", "--json", id]));
-        threads[id] = t.status || t.thread?.status || "unknown";
-      } catch {
-        threads[id] = "unknown";
-      }
+      const t = callJson(run, `thread ${id}`, "bb", ["thread", "show", "--json", id]);
+      const status = t.status || t.thread?.status;
+      if (!status) throw new Error(`bb thread show returned no status for thread ${id}`);
+      threads[id] = status;
     }
   }
   let phases;
-  try {
-    const repos = JSON.parse(run("bb", ["factory", "repos", "list", "--json"]));
-    const cfg = (Array.isArray(repos) ? repos[0] : repos)?.phases;
-    if (cfg) phases = DEFAULT_PHASES.map((p) => ({ ...p, ...(cfg[p.id] || {}) }));
-  } catch {}
-  return { now: new Date().toISOString(), issues, threads, reports: gatherReports(), phases };
+  const repos = callJson(run, "factory repos", "bb", ["factory", "repos", "list", "--json"]);
+  const cfg = (Array.isArray(repos) ? repos[0] : repos)?.phases;
+  if (cfg) phases = DEFAULT_PHASES.map((p) => ({ ...p, ...(cfg[p.id] || {}) }));
+  return { now: new Date().toISOString(), issues, threads, reports: gatherReports(run), phases };
 }
 
 export function writeIfChanged(file, state) {
   const body = JSON.stringify(state, null, 2) + "\n";
   try {
     if (fs.readFileSync(file, "utf8") === body) return false;
-  } catch {}
+  } catch (e) {
+    if (e.code !== "ENOENT" && e.code !== "ENOTDIR") throw e;
+  }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, body);
-  fs.renameSync(tmp, file);
+  try {
+    fs.writeFileSync(tmp, body);
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    fs.rmSync(tmp, { force: true });
+    throw e;
+  }
   return true;
 }
 
@@ -153,7 +182,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const i = process.argv.indexOf(name);
     return i > 0 ? process.argv[i + 1] : undefined;
   };
-  const input = arg("--input");
-  const inputs = input ? JSON.parse(fs.readFileSync(input, "utf8")) : gatherInputs();
-  writeIfChanged(arg("--out") || "site/state.json", buildState(inputs));
+  try {
+    const input = arg("--input");
+    const inputs = input ? JSON.parse(fs.readFileSync(input, "utf8")) : await gatherInputs();
+    writeIfChanged(arg("--out") || "site/state.json", buildState(inputs));
+  } catch (e) {
+    console.error(`floor-state: ${String(e.message).split("\n")[0]}`);
+    process.exit(1);
+  }
 }
