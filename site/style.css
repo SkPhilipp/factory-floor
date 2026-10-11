@@ -33,6 +33,10 @@ th, td {
   padding: 0.4rem 0.8rem;
 }
 
+pre {
+  overflow-x: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+
 .floor {
   perspective: 900px;
   margin: 2rem 0 4rem;
