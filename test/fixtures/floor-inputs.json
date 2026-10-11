@@ -1,0 +1,20 @@
+{
+  "now": "2026-01-01T00:10:00Z",
+  "issues": [
+    { "number": 21, "title": "Waiting task", "state": "open", "url": "http://localhost/issues/21", "labels": ["factory"], "comments": [] },
+    { "number": 11, "title": "Held by an agent", "state": "open", "url": "http://localhost/issues/11", "labels": ["factory", "factory:intake"],
+      "comments": [{ "body": "Intake started, attempt 1: thread `thr_a` http://localhost/threads/thr_a", "createdAt": "2026-01-01T00:05:00Z" }] },
+    { "number": 12, "title": "Two strikes survived", "state": "open", "url": "http://localhost/issues/12", "labels": ["factory", "factory:build", "strike:2"], "comments": [] },
+    { "number": 14, "title": "Stuck", "state": "open", "url": "http://localhost/issues/14", "labels": ["factory", "factory:failed", "strike:5"],
+      "comments": [{ "body": "Review started, attempt 3: thread `thr_b` http://localhost/threads/thr_b", "createdAt": "2026-01-01T00:02:00Z" }] },
+    { "number": 10, "title": "Merged", "state": "closed", "url": "http://localhost/issues/10", "labels": ["factory", "factory:done"], "comments": [] },
+    { "number": 15, "title": "Retried then passed", "state": "open", "url": "http://localhost/issues/15", "labels": ["factory", "factory:review", "strike:1"], "comments": [] },
+    { "number": 99, "title": "Unrelated bug", "state": "open", "url": "http://localhost/issues/99", "labels": ["bug"], "comments": [] }
+  ],
+  "threads": { "thr_a": "running", "thr_b": "idle" },
+  "reports": [
+    { "issue": 12, "attempt": 2, "kind": "gate", "ok": false, "text": "Gate failed: missing test" },
+    { "issue": 15, "attempt": 1, "kind": "gate", "ok": false, "text": "old" },
+    { "issue": 15, "attempt": 2, "kind": "gate", "ok": true, "text": "" }
+  ]
+}
