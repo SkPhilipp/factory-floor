@@ -1,0 +1,82 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { buildState } from "../scripts/floor-state.mjs";
+import { buildModel, tally } from "../site/floor.js";
+
+const fixture = JSON.parse(fs.readFileSync("test/fixtures/floor-inputs.json", "utf8"));
+const get = (s, n) => s.items.find((i) => i.number === n);
+const issue = (number, labels, comments = []) => ({ number, title: "t", state: "open", url: `u${number}`, labels, comments });
+const started = (n, thread, at) => ({ body: `Build started, attempt ${n}: thread \`${thread}\` http://x/${thread}`, createdAt: at });
+
+test("fixture items, order and values", () => {
+  const s = buildState(fixture);
+  assert.deepEqual(s.items.map((i) => i.number), [10, 11, 12, 14, 15, 21]);
+  assert.deepEqual(Object.keys(s), ["phases", "items"]);
+  assert.deepEqual(Object.keys(s.items[0]), ["number", "title", "phase", "status", "strikes", "thread_url", "issue_url", "started_at", "defect"]);
+  assert.equal(get(s, 21).phase, "backlog");
+  assert.equal(get(s, 21).status, "waiting");
+  const a = get(s, 11);
+  assert.deepEqual([a.phase, a.status, a.thread_url, a.started_at], ["intake", "running", "http://localhost/threads/thr_a", "2026-01-01T00:05:00Z"]);
+  assert.deepEqual([get(s, 12).phase, get(s, 12).status, get(s, 12).strikes], ["build", "waiting", 2]);
+  assert.deepEqual([get(s, 14).phase, get(s, 14).status, get(s, 14).strikes, get(s, 14).thread_url], ["review", "failed", 5, null]);
+  assert.deepEqual([get(s, 10).phase, get(s, 10).status], ["release", "merged"]);
+  assert.equal(get(s, 12).defect, "Gate failed: missing test");
+  assert.equal(get(s, 15).defect, null);
+});
+
+test("defect survives a missing report and is cleared by a passing one", () => {
+  const run = (reports) => get(buildState({ issues: [issue(1, ["factory", "factory:build"])], reports }), 1).defect;
+  const bad = { issue: 1, attempt: 1, kind: "gate", ok: false, text: "bad" };
+  assert.equal(run([bad]), "bad");
+  assert.equal(run([bad]), "bad");
+  assert.equal(run([bad, { issue: 1, attempt: 2, kind: "gate", ok: true, text: "" }]), null);
+  assert.equal(run([{ issue: 1, attempt: 1, kind: "gate", ok: true, text: "" }, { issue: 1, attempt: 1, kind: "review", ok: false, text: "rev" }]), "rev");
+});
+
+test("merged items stay and tally counts them", () => {
+  const s = buildState(fixture);
+  assert.ok(get(s, 10));
+  assert.deepEqual(tally(s.items), { merged: 1, failed: 1, retried: 2 });
+});
+
+test("output feeds buildModel and overflow appears once", () => {
+  assert.doesNotThrow(() => buildModel(buildState(fixture), Date.parse(fixture.now)));
+  const issues = [11, 12, 13].map((n) => issue(n, ["factory", "factory:intake"], [started(1, `thr_${n}`, "2026-01-01T00:00:00Z")]));
+  const threads = { thr_11: "running", thr_12: "running", thr_13: "running" };
+  const s = buildState({ issues, threads });
+  const model = buildModel(s, 0);
+  const text = JSON.stringify(model);
+  for (const n of [11, 12, 13]) assert.equal(text.split(`"number":${n},`).length - 1, 1);
+});
+
+test("input variants", () => {
+  assert.deepEqual(buildState({ issues: [], threads: {}, reports: [] }).items, []);
+  assert.equal(get(buildState({ issues: [issue(1, ["factory"])] }), 1).strikes, 0);
+  assert.equal(get(buildState({ issues: [issue(1, ["factory", "strike:1", "strike:3"])] }), 1).strikes, 3);
+  const two = issue(1, ["factory", "factory:build"], [started(1, "thr_old", "2026-01-01T00:00:00Z"), started(2, "thr_new", "2026-01-01T00:05:00Z")]);
+  const r = get(buildState({ issues: [two], threads: { thr_old: "running", thr_new: "running" } }), 1);
+  assert.equal(r.thread_url, "http://x/thr_new");
+  assert.equal(r.started_at, "2026-01-01T00:05:00Z");
+  const idle = get(buildState({ issues: [two], threads: { thr_new: "idle" } }), 1);
+  assert.deepEqual([idle.status, idle.thread_url, idle.started_at], ["waiting", null, null]);
+  assert.deepEqual([get(buildState({ issues: [issue(1, ["factory", "factory:failed"])] }), 1).phase], ["backlog"]);
+});
+
+test("CLI writes valid JSON, skips unchanged writes, spares site/state.json", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "floor-"));
+  const out = path.join(dir, "state.json");
+  const before = fs.readFileSync("site/state.json", "utf8");
+  const go = () => execFileSync("node", ["scripts/floor-state.mjs", "--input", "test/fixtures/floor-inputs.json", "--out", out]);
+  go();
+  assert.equal(JSON.parse(fs.readFileSync(out, "utf8")).items.length, 6);
+  const m = fs.statSync(out).mtimeMs;
+  fs.utimesSync(out, 1, 1);
+  go();
+  assert.equal(fs.statSync(out).mtimeMs, 1000);
+  assert.notEqual(m, 1000);
+  assert.equal(fs.readFileSync("site/state.json", "utf8"), before);
+});
