@@ -182,3 +182,27 @@ pre {
 .tally span {
   color: #f2f3f5;
 }
+
+.scene {
+  cursor: grab;
+  touch-action: none;
+}
+
+.defect {
+  display: block;
+  margin-top: 3px;
+  color: #f0932b;
+}
+
+.seat.spare .light {
+  background: #3a3a3e;
+}
+
+.load-error {
+  color: #f0932b;
+}
+
+.column[hidden],
+.seat[hidden] {
+  display: none;
+}
