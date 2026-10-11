@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The harness</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>The harness</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="harness.html">Harness</a></li>
+</ul>
+</nav>
+<p>An agent is a prompt. A harness is what turns the prompt into a session with a shell, a file system, a git identity and a stopping rule. The factory has two layers of it: Claude Code runs one session, bb starts sessions, isolates them, and hears when they stop. Both run in one Docker container.</p>
+<h2>Claude Code</h2>
+<p>Claude Code is the session runner for every agent. Sessions run non-interactively with full permissions inside their workspace and end in a clear idle state, which is what the factory listens for. The working agreement lives in the repository's instructions file, so a session started by hand behaves like a dispatched one. The factory's commands, including the quality gate, are exposed to the agents as a skill and as an MCP tool. Sessions, settings and memory persist in one home directory, which is one volume.</p>
+<h2>bb</h2>
+<p>bb manages projects, threads and environments for coding agents, and runs plugins against them. Four primitives carry the loop, as a list with bold lead-ins:</p>
+<ul>
+<li><strong>Worktree environments</strong> give a thread its own branch and directory. The factory creates one per task at Intake and spawns the Build and Review threads, and every retry's threads, into that same environment. This is the hard guard: an agent can only reach its own branch, and merging into <code>main</code> is done by the factory, never by an agent.</li>
+<li><strong>Lifecycle events</strong> let a plugin react the moment a thread goes idle or fails. Hand-off checks, timeouts and strikes are a plugin listening on those events.</li>
+<li><strong>Threads read each other</strong>: a thread can open another thread's content, so a retry's agents read the failed attempts' threads by id, and a human's comment left in a failed thread is read the same way.</li>
+<li><strong>Plugins</strong> are installed from a path and reloaded without a restart. The factory's plugin provides the <code>bb factory</code> commands, the quality gate, the phase seats per repository, and a page in bb's sidebar with the factory floor.</li>
+</ul>
+<h2>The container</h2>
+<p>The container: one image, one compose file, two volumes.</p>
+<table>
+<tr><th>Piece</th><th>Where</th><th>Purpose</th></tr>
+<tr><td>bb server, web UI, host daemon</td><td>one process</td><td>bb from npm is the full stack</td></tr>
+<tr><td>Claude Code</td><td>global install</td><td>the agent harness</td></tr>
+<tr><td>git, gh, uv, ripgrep</td><td>system</td><td>what agents call</td></tr>
+<tr><td>bb data</td><td>volume</td><td>database, logs, plugins, thread storage</td></tr>
+<tr><td>Claude Code home</td><td>volume</td><td>sessions, memory, settings</td></tr>
+<tr><td>the target repository</td><td>cloned on start</td><td>what the factory builds</td></tr>
+</table>
+<p>The web UI is published on loopback only. Credentials are a Claude Code token and a GitHub token in one env file.</p>
+</main>
+</body>
+</html>
