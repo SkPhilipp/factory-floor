@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Intake</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="backlog.html">Backlog</a></li>
+<li><a href="release.html">Release</a></li>
+<li><a href="loop.html">The loop</a></li>
+<li><a href="intake.html">Intake</a></li>
+</ul>
+</nav>
+<h1>Intake</h1>
+<p>Three agents, three prompts, three separate sessions. An agent is a prompt handed to the harness together with a working agreement. Intake has 4 seats and an 8 minute timeout. Its artifact is <code>factory/plans/N-A.md</code> on the task's branch.</p>
+<h2>Input</h2>
+<p>One issue from the backlog and a fresh worktree on the task's branch. On a retry, also the failure reasons, the ids of the failed attempts' threads, which it opens and reads, and the branch those attempts left.</p>
+<h2>Output</h2>
+<p>The plan file, committed to the branch, and a comment on the issue linking to it. On a retry the plan is a new file, <code>factory/plans/42-2.md</code>, so a review names which attempt it reviewed.</p>
+<h2>The plan</h2>
+<pre># Plan for #N, attempt A
+
+## Goal
+One paragraph: what changes for the user of the product.
+
+## Scope
+In: …
+Out: …
+
+## Constraints
+- Files and directories the change may touch
+- Things that must not change: public interfaces, behaviour, dependencies
+- Budget: the number of commits or lines beyond which the plan is wrong
+
+## Acceptance criteria
+- [ ] Each item checkable by reading the diff or running a command
+
+## Proofs
+- `exact command` — what its output must show
+</pre>
+<p>Every proof is a command: a test run, a file that must exist, a screenshot written at a stated viewport. The quality gate runs all of them without judgement.</p>
+<p>Verifiable because: the end of Intake is itself a command the factory runs. The plan file exists, every heading is present, there is at least one criterion, every proof is runnable.</p>
+<p>On failure: if the request cannot be turned into a plan, the agent attaches a functional failure reason. An Intake failure costs all five strikes, so the task is not retried: if the agent whose job is to understand the request cannot, retrying is noise.</p>
+<h2>The prompt</h2>
+<blockquote>
+<p>You plan work for an unattended factory. Read issue #N and the repository. If the issue carries failure reasons and links to earlier threads, read those too; they are why the previous plan did not ship. Write <code>factory/plans/N-A.md</code> with exactly the sections Goal, Scope, Constraints, Acceptance criteria and Proofs, commit it to this branch, and comment on the issue with a link to it. Criteria must be checkable by reading the diff or running a command; no "works well". Proofs are the exact commands whose output the builder must attach. Constraints name what the change may touch and what it must not change. Split the issue if it cannot be done in one pull request of reviewable size; file the rest as new issues labelled <code>factory</code> and link them; this is the one place an agent files a task. Do not write code. The plan file is the only file you change. If the request cannot be planned, do not guess: comment on the issue under the heading "Functional failure" with one paragraph saying why, and stop.</p>
+</blockquote>
+</main>
+</body>
+</html>
