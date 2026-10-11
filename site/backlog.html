@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Backlog</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>The Backlog</h1>
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+</ul>
+</nav>
+<p>Everything starts as a task on the Backlog: the list of tasks the factory has not started yet. A task is a request in plain words, "I want the button to be red"; turning it into a plan is Intake's job, not the Backlog's.</p>
+<p>What goes on the Backlog is decided by humans or by automations. Sources: an issue a human opens by hand; a markdown note or a transcribed voice memo dropped in a folder, which a collection automation turns into an issue. The one exception is Intake splitting a request that does not fit one pull request: "redesign the site" becomes "new header", "new footer", "new colours", each a new <code>factory</code> issue linked from the original.</p>
+<p>Every source ends as one thing: a GitHub issue with a <code>factory</code> label. That label is the Backlog. From that moment GitHub Issues are the queue and labels are the state machine. The factory keeps no state of its own beyond a map from running agent to issue, so the whole factory can be read, and repaired, from the issue list.</p>
+<p>Order: first in, first out. No priorities. A task that fails and comes back to the Backlog joins at the back of the queue.</p>
+<table>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td><code>factory</code></td>
+<td>on the backlog, waiting for a free Intake agent</td>
+</tr>
+<tr>
+<td><code>factory:intake</code></td>
+<td>an Intake agent is turning it into a plan</td>
+</tr>
+<tr>
+<td><code>factory:build</code></td>
+<td>a Build agent owns it in an isolated workspace</td>
+</tr>
+<tr>
+<td><code>factory:review</code></td>
+<td>a Review agent is judging the pull request against the plan</td>
+</tr>
+<tr>
+<td><code>factory:release</code></td>
+<td>the release automation is merging and deploying it</td>
+</tr>
+<tr>
+<td><code>factory:done</code></td>
+<td>released</td>
+</tr>
+<tr>
+<td><code>factory:failed</code></td>
+<td>out of attempts, or failed intake; a human looks</td>
+</tr>
+<tr>
+<td><code>strike:1</code> … <code>strike:5</code></td>
+<td>strikes absorbed so far; five is the end</td>
+</tr>
+</table>
+<p>A human can unstick anything by editing a label.</p>
+</main>
+</body>
+</html>
