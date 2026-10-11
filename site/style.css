@@ -69,7 +69,7 @@ pre {
   position: relative;
   display: flex;
   align-items: center;
-  height: 64px;
+  height: 96px;
   margin-bottom: 0.5rem;
   transform-style: preserve-3d;
 }
