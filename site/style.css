@@ -185,6 +185,7 @@ pre {
 
 .scene {
   cursor: grab;
+  touch-action: none;
 }
 
 .defect {
@@ -195,4 +196,8 @@ pre {
 
 .seat.spare .light {
   background: #3a3a3e;
+}
+
+.load-error {
+  color: #f0932b;
 }
