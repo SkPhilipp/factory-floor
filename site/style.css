@@ -32,3 +32,8 @@ th, td {
   border: 1px solid #2e2e31;
   padding: 0.4rem 0.8rem;
 }
+
+pre {
+  overflow-x: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
